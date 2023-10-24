@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"log"
 	"net"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type TCPChan[T any] struct {
 	RecvCh       chan T
 	outboundConn net.Conn
 	ln           net.Listener
+	wg           sync.WaitGroup
 }
 
 func New[T any](listenAddr, remoteAddr string) (*TCPChan[T], error) {
@@ -38,11 +40,15 @@ func New[T any](listenAddr, remoteAddr string) (*TCPChan[T], error) {
 }
 
 func (t *TCPChan[T]) loop() {
+	t.wg.Wait()
+
 	for {
 		msg := <-t.SendCh
 		if err := gob.NewEncoder(t.outboundConn).Encode(&msg); err != nil {
 			log.Println(err)
+			return
 		}
+		log.Println("sent msg over the wire: ", msg)
 	}
 }
 
@@ -62,22 +68,30 @@ func (t *TCPChan[T]) acceptLoop() {
 }
 
 func (t *TCPChan[T]) handleConn(conn net.Conn) {
+	defer func() {
+		t.ln.Close()
+	}()
 	for {
 		var msg T
 		if err := gob.NewDecoder(conn).Decode(&msg); err != nil {
 			log.Println(err)
-			continue
+			return
 		}
 		t.RecvCh <- msg
 	}
 }
 
 func (t *TCPChan[T]) dialRemoteAndRead() {
-	conn, err := net.Dial("tcp", t.remoteAddr)
-	if err != nil {
-		log.Printf("dial error (%s) retrying: ", err)
-		time.Sleep(time.Second * 3)
-		t.dialRemoteAndRead()
+	t.wg.Add(1)
+	for {
+		conn, err := net.Dial("tcp", t.remoteAddr)
+		if err != nil {
+			log.Printf("dial error (%s) retrying: ", err)
+			time.Sleep(time.Second * 3)
+		} else {
+			t.outboundConn = conn
+			break
+		}
 	}
-	t.outboundConn = conn
+	t.wg.Done()
 }
