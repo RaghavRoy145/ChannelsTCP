@@ -7,8 +7,8 @@ Implementing bidirectional Go channels over TCP
 
 ## Usage
 (This order can be reversed, it does not matter)
-* In the root directory, run go run main.go -> channel starts trying to dial :4000
-* In the /remote directory, run go run main.go -> previous server (at :3000) connects here and sends a message on a receive channel here
+* In the root directory, run ```go run main.go``` -> channel starts trying to dial :4000
+* In the /remote directory, run ```go run main.go``` -> previous server (at :3000) connects here and sends a message on a receive channel here
 * Both channels send and receive messages to and from the other one
 
 ## TODO
