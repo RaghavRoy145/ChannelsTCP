@@ -62,6 +62,7 @@ func (r *Receiver[T]) acceptLoop() {
 			log.Println("Accept error", err)
 			return
 		}
+		log.Printf("sender connected %s", conn.RemoteAddr())
 		go r.handleConn(conn)
 	}
 }

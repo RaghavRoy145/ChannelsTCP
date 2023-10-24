@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"github.com/raghavroy145/chan-TCP-nels/tcpchan"
 )
 
 func main() {
-	receiver, err := tcpchan.NewReceiver[int](":4000")
+	receiver, err := tcpchan.NewReceiver[int](":3000")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -17,7 +18,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	time.Sleep(time.Second * 2)
 	sender.Chan <- 100
 	msg := <-receiver.Chan
-	fmt.Println(msg)
+	fmt.Println("received from channel over the wire: ", msg)
 }
